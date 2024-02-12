@@ -45,9 +45,8 @@ To configure the script for your environment, you will need to set several varia
 
 ## Documentation 
 For more information on the APIs used:
-
-[Clickup API](https://clickup.com/api/)
-[Slack API](https://api.slack.com/messaging/webhooks)
+- [Clickup API](https://clickup.com/api/)
+- [Slack API](https://api.slack.com/messaging/webhooks)
 
 
 
