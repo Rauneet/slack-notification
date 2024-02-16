@@ -7,9 +7,12 @@ import time
 
 # Constants 
 CLICKUP_API_TOKEN = 'pk_73223342_17LY9UC6TE84D6P5MF2ALXU5W8UT6LHA'  #clickup api token
-SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'  #slack webhook url 
+SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'  #slack webhook url
 CLICKUP_API_ENDPOINT = 'https://api.clickup.com/api/v2'       #clickup api endpoint
-HEADERS = {'Authorization': CLICKUP_API_TOKEN}
+HEADERS = {
+    'Authorization': CLICKUP_API_TOKEN
+    }
+SECONDS_IN_AN_HOUR = 3600
 
 
 # Function to check whether it is night time or not 
@@ -102,6 +105,11 @@ def get_tickets_from_customer_lists(folder_id):
         get_tasks_and_notify(list_id,list_name)
 
 if not is_night_time():
-    get_tickets_from_customer_lists("109448264")
+    # it will check for new tickets every 60 min
+    while True:                          #1
+        print('checking for new tickets to notify')  #2
+        get_tickets_from_customer_lists("109448264")
+        print(f"Waiting for {SECONDS_IN_AN_HOUR // 60} minutes until the next check.")  #3  
+        time.sleep(SECONDS_IN_AN_HOUR)  #4
 else:
     print("It's night time. No operations will be performed.")
