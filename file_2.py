@@ -47,7 +47,7 @@ def get_tasks_and_notify(list_id, list_name):
         #     continue
 
         status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
-        print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
+        #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
         priority = ticket.get('priority')    #get to the priority object  and then access the attribute value
         # retrieves the ticket priority in lowercase for better consistency default to none if priority is not set 
         priority_type = priority.get('priority', '').lower() if priority and isinstance(priority, dict) else 'none'
@@ -62,11 +62,11 @@ def get_tasks_and_notify(list_id, list_name):
                 comments = comment_response.json().get('comments' ,[])
                 pprint.pprint(comments)
                 # Checks if there are more than two comments on the task.
-                if len(comments) <=2:
-                    # print(f"Task ID: {task_id} has more than two comments, no action needed.")
-                    # break
+                if len(comments) >2:
+                    print(f"Task ID: {task_id} has more than two comments, no action needed.")
+                    continue
                 #checks if there are comments and check the time of the last comment 
-                 if comments:
+                if comments:
                      # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
                     last_comment_timestamp = int(comments[0]['date']) // 1000
                     #check for the current time 
