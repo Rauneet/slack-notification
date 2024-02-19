@@ -7,7 +7,7 @@ import time
 
 # Constants 
 CLICKUP_API_TOKEN = 'pk_73223342_17LY9UC6TE84D6P5MF2ALXU5W8UT6LHA'  #clickup api token
-SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'  #slack webhook url
+SLACK_WEBHOOK_URL = 'https://hooks.slack.com/triggers/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'  #slack webhook url-'https://hooks.slack.com/services/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'- previous webhook
 CLICKUP_API_ENDPOINT = 'https://api.clickup.com/api/v2'       #clickup api endpoint
 HEADERS = {
     'Authorization': CLICKUP_API_TOKEN
@@ -22,12 +22,27 @@ def is_night_time():
     current_time = datetime.datetime.now(tz)
     return not 9 <= current_time.hour <= 21
 
-def send_message_slack(message):
+
+
+def send_message_slack(message, task_url):
+    full_message = f'{message} Ticket URL:'
     payload = {
-        'text' : message
+        'full_message' : full_message,
+        'task_url': task_url
     }
-    response = requests.post(SLACK_WEBHOOK_URL, json=payload)
+    headers = {
+        "Content-Type": "application/json"
+    }
+    response = requests.post(SLACK_WEBHOOK_URL, json=payload, headers=headers)
     return response.status_code == 200
+
+# def send_message_slack(message, task_url):
+#     full_message = f'{message} Task URL:{task_url}'                                                              #include task_url
+#     payload = {
+#         'text' : full_message                                           #it is message
+#     }
+#     response = requests.post(SLACK_WEBHOOK_URL, json=payload)
+#     return response.status_code == 200
 
 def get_tasks_and_notify(list_id, list_name):
     if is_night_time():
@@ -39,8 +54,11 @@ def get_tasks_and_notify(list_id, list_name):
 
     tickets = response.json().get('tasks', [])
     for ticket in tickets:
+        task_url = ticket.get('url')
+        # print(task_url)                              #for debugging
+
         # is_bug = False
-        # for field in ticket.get('custom_field', []):                                                      #this logic for checking the bug is working 
+        # for field in ticket.get('custom_field', []):                                                     
         #     if field.get('name').strip() == 'Request Type' and field.get('value','').strip() == 'Bug':
         #         is_bug = True
         #         print(f"Found a Bug for Ticket ID: {ticket['id']}")
@@ -58,6 +76,7 @@ def get_tasks_and_notify(list_id, list_name):
         # Check for desired status and priority
         if status_type in ['open','inprogress','pending(ack)'] and priority_type in ['high', 'urgent']:
             task_id = ticket['id']
+            # task_url = f"https://app.clickup.com/t/{task_id}"
          # Fetches comments for a given task from ClickUp   
             comment_response = requests.get(f'{CLICKUP_API_ENDPOINT}/task/{task_id}/comment', headers=HEADERS)
             if comment_response.status_code == 200:
@@ -76,9 +95,10 @@ def get_tasks_and_notify(list_id, list_name):
                     current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
                     if(current_time - last_comment_timestamp) > 7200:
-                        message = f'Ticket ID: {task_id} from list "{list_name}" with status "{status_type}" and priority "{priority_type}"  https://app.clickup.com/t/{task_id} requires attention.'
-                        if send_message_slack(message):
-                            print(f'Success !!')
+                        message = f'Ticket ID: {task_id} from list "{list_name}" with status "{status_type}" and priority "{priority_type}" requires attention.'  # this is included https://app.clickup.com/t/{task_id}
+                        # task_url =  f'https://app.clickup.com/t/{task_id}'    
+                        if send_message_slack(message,task_url):
+                            print(f'Message being sent' , message)
                         else:
                             print(f'Failed to send notification!!')
                     else:
