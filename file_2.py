@@ -7,7 +7,7 @@ import time
 
 # Constants 
 CLICKUP_API_TOKEN = 'pk_73223342_17LY9UC6TE84D6P5MF2ALXU5W8UT6LHA'  #clickup api token
-SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'  #slack webhook url 
+SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'  #slack webhook url 
 CLICKUP_API_ENDPOINT = 'https://api.clickup.com/api/v2'       #clickup api endpoint
 HEADERS = {'Authorization': CLICKUP_API_TOKEN}
 
@@ -26,7 +26,7 @@ def send_message_slack(message):
     response = requests.post(SLACK_WEBHOOK_URL, json=payload)
     return response.status_code == 200
 
-def get_tasks_and_notify(list_id, list_name):
+def get_tasks_and_notify(list_id , list_name):                     #list name is included
     if is_night_time():
         return            # Skip execution during night time
 
@@ -47,7 +47,7 @@ def get_tasks_and_notify(list_id, list_name):
         #     continue
 
         status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
-        print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
+        #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
         priority = ticket.get('priority')    #get to the priority object  and then access the attribute value
         # retrieves the ticket priority in lowercase for better consistency default to none if priority is not set 
         priority_type = priority.get('priority', '').lower() if priority and isinstance(priority, dict) else 'none'
@@ -62,18 +62,18 @@ def get_tasks_and_notify(list_id, list_name):
                 comments = comment_response.json().get('comments' ,[])
                 pprint.pprint(comments)
                 # Checks if there are more than two comments on the task.
-                if len(comments) <=2:
-                    # print(f"Task ID: {task_id} has more than two comments, no action needed.")
-                    # break
+                if len(comments) > 2:
+                    print(f"Task ID: {task_id} has more than two comments, no action needed.")
+                    continue
                 #checks if there are comments and check the time of the last comment 
-                 if comments:
+                if comments:
                      # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
                     last_comment_timestamp = int(comments[0]['date']) // 1000
                     #check for the current time 
                     current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
-                    if(current_time - last_comment_timestamp) > 7200:
-                        message = f'Ticket ID: {task_id} from list "{list_name}" with status "{status_type}" and priority "{priority_type}"  https://app.clickup.com/t/{task_id} requires attention.'
+                    if(current_time - last_comment_timestamp) > 7200:                               #in actual it is 2 hrs ie 7200 seconds
+                        message = f'Ticket ID: {task_id} in list "{list_name}" with status "{status_type}" and priority "{priority_type}"  https://app.clickup.com/t/{task_id} requires attention.'   #in actual message it is {list_name}
                         if send_message_slack(message):
                             print(f'Success !!')
                         else:
@@ -102,6 +102,6 @@ def get_tickets_from_customer_lists(folder_id):
         get_tasks_and_notify(list_id,list_name)
 
 if not is_night_time():
-    get_tickets_from_customer_lists("109448264")
+    get_tickets_from_customer_lists('109448264')
 else:
     print("It's night time. No operations will be performed.")
