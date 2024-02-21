@@ -113,20 +113,22 @@ def get_tasks_and_notify(list_id, list_name):
             if comment_response.status_code == 200:
                 # Extracts the list of comments
                 comments = comment_response.json().get('comments' ,[])
+                #filter the comments made by bot
+                user_comments = [comment for comment in comments if comment['user']['id'] != -1]
                 pprint.pprint(comments)
                 # Checks if there are more than two comments on the task.
-                if len(comments) > 2:
-                    print(f"Task ID: {task_id} has more than two comments, no action needed.")
+                if len(user_comments) > 2:
+                    print(f"Task ID: {task_id} has more than two user comments, no action needed.")
                     continue
                 #checks if there are comments and check the time of the last comment 
-                if comments:
+                if user_comments:
                      # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
-                    last_comment_timestamp = int(comments[0]['date']) // 1000
+                    last_comment_timestamp = int(user_comments[-1]['date']) // 1000
                     #check for the current time 
                     current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
                     if(current_time - last_comment_timestamp) > 7200:
-                        message = f'Ticket ID: {task_id} from list "{list_name}" with status "{status_type}" and priority "{priority_type}" requires attention.'  # this is included https://app.clickup.com/t/{task_id}
+                        message = f'Update with latest progress.'  # this is included https://app.clickup.com/t/{task_id}
                         # task_url =  f'https://app.clickup.com/t/{task_id}'    
                         if send_message_slack(message,task_url):                                              #inten
                             print(f'Message being sent' , message)                                            #inten
