@@ -1,4 +1,5 @@
 import requests
+import json
 import datetime
 from pytz import timezone
 import pprint
@@ -7,16 +8,19 @@ import time
 from dotenv import load_dotenv
 import os
 
-load_dotenv()        #this will load the environment variables from .env file
+load_dotenv()       #this will load the environment variables from .env file
+#dictionary to keep track of notified tickets 
+notified_tickets = set()
+
+
 # Constants 
 CLICKUP_API_TOKEN = os.getenv('CLICKUP_API_TOKEN')                                                                                            #'pk_73223342_17LY9UC6TE84D6P5MF2ALXU5W8UT6LHA'  #clickup api token
 SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')                                                                                            #'https://hooks.slack.com/triggers/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'  #slack webhook url-'https://hooks.slack.com/services/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'- previous webhook
-CLICKUP_API_ENDPOINT = 'https://api.clickup.com/api/v2'       #clickup api endpoint
+CLICKUP_API_ENDPOINT = 'https://api.clickup.com/api/v2'    #clickup api endpoint    
 HEADERS = {
     'Authorization': CLICKUP_API_TOKEN
     }
 SECONDS_IN_AN_HOUR = 3600
-
 
 # Function to check whether it is night time or not 
 # Working hour is defined from 9 AM to 9 PM
@@ -38,14 +42,16 @@ def send_message_slack(message, task_url):
     response = requests.post(SLACK_WEBHOOK_URL, json=payload, headers=headers)
     return response.status_code == 200
 
-# def send_message_slack(message, task_url):
-#     full_message = f'{message} Task URL:{task_url}'                                                              #include task_url
-#     payload = {
-#         'text' : full_message                                           #it is message
-#     }
-#     response = requests.post(SLACK_WEBHOOK_URL, json=payload)
-#     return response.status_code == 200
-
+def is_bug_based_on_comment(comments):
+    bot_comment_count = 0                    #initialize the bot comment count to 0
+    for comment in comments:                 #iterate through each commets
+        if comment['user']['id'] == -1:      #checks if the id of the comment is -1
+            bot_comment_count +=1            #if it is -1 increase the bot_comment_count
+    if bot_comment_count>=1:                 #checks if the comment is greater than equal to 2
+    #if true consider it as a bug based on comment  
+        return True
+    else:
+        return False     #it is not a bug based on comment
 
 # def is_request_type_bug(custom_fields):
 #     for field in custom_fields:
@@ -62,15 +68,8 @@ def send_message_slack(message, task_url):
 #     ticket_updated = datetime.datetime.fromtimestamp(int(ticket['date_updated'])/1000)
 #     return datetime.datetime.now() - ticket_updated < datetime.timedelta(days=days)
 
-def is_bug_task(ticket):
-    request_type_field_id = 'af553c42-561b-4260-93b0-ca2afa6b520f'
-    bug_option_id = "2c234b21-fb9a-49ad-bceb-0a342556e213"                      #Comment out 
-    for custom_field in ticket.get("custom_fields", []):
-        if custom_field.get("id") == request_type_field_id and custom_field.get("value") == bug_option_id:
-            return True
-    return False
-
 def get_tasks_and_notify(list_id, list_name):
+    global notified_tickets                                   #global notified_tickets dictionary for storing the ticket id which have been notified 
     if is_night_time():
         return            # Skip execution during night time
 
@@ -79,9 +78,11 @@ def get_tasks_and_notify(list_id, list_name):
         return             # Exit if tasks cannot be fetched
 
     tickets = response.json().get('tasks', [])
-    for ticket in tickets:    
+    for ticket in tickets:
+        task_id = ticket['id']                                                                         #till here 
         task_url = ticket.get('url')     #this line will remain
-        
+        if task_id in notified_tickets:      #checks if the ticket is in notified_tickets dictionary if not present it will again continue 
+            continue
         # print(task_url)                            #for debugging
         # is_bug = False
         # for field in ticket.get('custom_fields', []):
@@ -106,38 +107,42 @@ def get_tasks_and_notify(list_id, list_name):
         
         # Check for desired status and priority
         if status_type in ['open','inprogress','pending(ack)'] and priority_type in ['high', 'urgent']:
-            task_id = ticket['id']
+            # task_id = ticket['id']
             # task_url = f"https://app.clickup.com/t/{task_id}"
          # Fetches comments for a given task from ClickUp   
             comment_response = requests.get(f'{CLICKUP_API_ENDPOINT}/task/{task_id}/comment', headers=HEADERS)
             if comment_response.status_code == 200:
-                # Extracts the list of comments
+                # Extracts comments
                 comments = comment_response.json().get('comments' ,[])
+                if is_bug_based_on_comment(comments):
                 #filter the comments made by bot
-                user_comments = [comment for comment in comments if comment['user']['id'] != -1]
-                pprint.pprint(comments)
+                    user_comments = [comment for comment in comments if comment['user']['id'] != -1]
+                    pprint.pprint(comments)
                 # Checks if there are more than two comments on the task.
-                if len(user_comments) > 2:
-                    print(f"Task ID: {task_id} has more than two user comments, no action needed.")
-                    continue
+                    if len(user_comments) > 2:
+                        print(f"Task ID: {task_id} has more than two user comments, no action needed.")
+                        continue
                 #checks if there are comments and check the time of the last comment 
-                if user_comments:
-                     # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
-                    last_comment_timestamp = int(user_comments[-1]['date']) // 1000
-                    #check for the current time 
-                    current_time = time.time()
+                    if user_comments:
+                        # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
+                        last_comment_timestamp = int(user_comments[-1]['date']) // 1000
+                        #check for the current time 
+                        current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
-                    if(current_time - last_comment_timestamp) > 7200:
-                        message = f'Update with latest progress.'  # this is included https://app.clickup.com/t/{task_id}
+                        if(current_time - last_comment_timestamp) > 7200:
+                            message = f'Update with latest progress.'  # this is included https://app.clickup.com/t/{task_id}
                         # task_url =  f'https://app.clickup.com/t/{task_id}'    
-                        if send_message_slack(message,task_url):                                              #inten
-                            print(f'Message being sent' , message)                                            #inten
+                            if send_message_slack(message,task_url):                                              
+                                print(f'Message being sent' , message)
+                                notified_tickets.add(task_id)                                  #[task_id] = True                        #this will mark the ticket as notified true                                        
+                            else:
+                                print(f'Failed to send notification!!')
                         else:
-                            print(f'Failed to send notification!!')
+                            print(f'No need to notify as last comment was made within 2 hours')   # Last comment was within 2 hours, no notification needed.
                     else:
-                        print(f'No need to notify as last comment was made within 2 hours')   # Last comment was within 2 hours, no notification needed.
+                        print(f'No comments in the ticket is made by user')   # No comments have been made on the task.
                 else:
-                    print(f'No comments in the ticket is made')   # No comments have been made on the task.
+                    print(f'its not a bug based on comment {task_url}')
             else:
                 print(f'failed to fetch ticket comments')    #Failed to fetch the task comments
             
