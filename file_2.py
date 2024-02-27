@@ -15,7 +15,6 @@ notified_tickets = set()
 end_of_day_tickets = []   #new line
 # summary_sent_today = False
 
-
 # Constants 
 CLICKUP_API_TOKEN = os.getenv('CLICKUP_API_TOKEN')                                                                                            #'pk_73223342_17LY9UC6TE84D6P5MF2ALXU5W8UT6LHA'  #clickup api token
 SLACK_WEBHOOK_URL = os.getenv('SLACK_WEBHOOK_URL')                                                                                            #'https://hooks.slack.com/triggers/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'  #slack webhook url-'https://hooks.slack.com/services/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'- previous webhook
@@ -25,8 +24,8 @@ HEADERS = {
     }
 SECONDS_IN_AN_HOUR = 3600
 
-# Function to check whether it is night time or not 
-# Working hour is defined from 9 AM to 9 PM
+# # Function to check whether it is night time or not 
+# # Working hour is defined from 9 AM to 9 PM
 def is_night_time():
     tz = timezone('Asia/Kolkata')
     current_time = datetime.datetime.now(tz)
@@ -62,16 +61,20 @@ def is_bug_based_on_comment(comments):
 #     updated_recently = (now - date_updated) < datetime.timedelta(hours=hours)
 #     created_recently = (now - date_created) < datetime.timedelta(hours=hours)
 
+<<<<<<< HEAD
     # return updated_recently or created_recently
 
+=======
+>>>>>>> 10c5867263cfa6e6178ac89937dd9b33c31d8614
 def get_tasks_and_notify(list_id, list_name):
     global notified_tickets                                   #global notified_tickets dictionary for storing the ticket id which have been notified 
     if is_night_time():
         return            # Skip execution during night time
 
-    response = requests.get(f'{CLICKUP_API_ENDPOINT}/list/{list_id}/task', headers=HEADERS)
-    if response.status_code != 200:
-        return             # Exit if tasks cannot be fetched
+
+     response = requests.get(f'{CLICKUP_API_ENDPOINT}/list/{list_id}/task', headers=HEADERS)
+     if response.status_code != 200:
+         return             # Exit if tasks cannot be fetched
 
     tickets = response.json().get('tasks', [])
     for ticket in tickets:
@@ -79,8 +82,11 @@ def get_tasks_and_notify(list_id, list_name):
         task_url = ticket.get('url')     #this line will remain
         if task_id in notified_tickets: #or not is_recent_ticket(ticket):      #checks if the ticket is in notified_tickets dictionary if not present it will again continue 
             continue
+<<<<<<< HEAD
         # print(task_url)                            #for debugging
         
+=======
+>>>>>>> 10c5867263cfa6e6178ac89937dd9b33c31d8614
         status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
         #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
         priority = ticket.get('priority')    #get to the priority object  and then access the attribute value
@@ -131,20 +137,20 @@ def get_tasks_and_notify(list_id, list_name):
                 print(f'failed to fetch ticket comments')    #Failed to fetch the task comments
                                        
                     
-# retrieves the lists from the specific folder in the clickup
-def get_list(folder_id):
-    response = requests.get(f'{CLICKUP_API_ENDPOINT}/folder/{folder_id}/list', headers=HEADERS)
-    if response.status_code == 200:
-        return response.json().get('lists', [])
-    return []
+# # retrieves the lists from the specific folder in the clickup
+ def get_list(folder_id):
+     response = requests.get(f'{CLICKUP_API_ENDPOINT}/folder/{folder_id}/list', headers=HEADERS)
+     if response.status_code == 200:
+         return response.json().get('lists', [])
+     return []
 
-# retrieves all the ticket/task from the specific list and also get the list name and list id and call the get_task_and_notify() for processing each ticket in the list
-def get_tickets_from_customer_lists(folder_id):
-    lists = get_list(folder_id)
-    for list_item in lists:
-        list_name, list_id = list_item.get('name'), list_item.get('id')
-        print(f'Fetching tickets for list: {list_name}')
-        get_tasks_and_notify(list_id,list_name)
+# # retrieves all the ticket/task from the specific list and also get the list name and list id and call the get_task_and_notify() for processing each ticket in the list
+ def get_tickets_from_customer_lists(folder_id):
+     lists = get_list(folder_id)
+     for list_item in lists:
+         list_name, list_id = list_item.get('name'), list_item.get('id')
+         print(f'Fetching tickets for list: {list_name}')
+         get_tasks_and_notify(list_id,list_name)
 
 def send_summary_slack():
     global end_of_day_tickets, summary_sent_today
@@ -175,3 +181,4 @@ if not is_night_time():
         time.sleep(SECONDS_IN_AN_HOUR)  #4
 else:
     print("It's night time. No operations will be performed.")
+
