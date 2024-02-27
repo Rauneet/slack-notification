@@ -69,9 +69,9 @@ def get_tasks_and_notify(list_id, list_name):
         return            # Skip execution during night time
 
 
-     response = requests.get(f'{CLICKUP_API_ENDPOINT}/list/{list_id}/task', headers=HEADERS)
-     if response.status_code != 200:
-         return             # Exit if tasks cannot be fetched
+    response = requests.get(f'{CLICKUP_API_ENDPOINT}/list/{list_id}/task', headers=HEADERS)
+    if response.status_code != 200:
+        return             # Exit if tasks cannot be fetched
 
     tickets = response.json().get('tasks', [])
     for ticket in tickets:
@@ -132,19 +132,19 @@ def get_tasks_and_notify(list_id, list_name):
                                        
                     
 # # retrieves the lists from the specific folder in the clickup
- def get_list(folder_id):
-     response = requests.get(f'{CLICKUP_API_ENDPOINT}/folder/{folder_id}/list', headers=HEADERS)
-     if response.status_code == 200:
-         return response.json().get('lists', [])
-     return []
+def get_list(folder_id):
+    response = requests.get(f'{CLICKUP_API_ENDPOINT}/folder/{folder_id}/list', headers=HEADERS)
+    if response.status_code == 200:
+        return response.json().get('lists', [])
+    return []
 
 # # retrieves all the ticket/task from the specific list and also get the list name and list id and call the get_task_and_notify() for processing each ticket in the list
- def get_tickets_from_customer_lists(folder_id):
-     lists = get_list(folder_id)
-     for list_item in lists:
-         list_name, list_id = list_item.get('name'), list_item.get('id')
-         print(f'Fetching tickets for list: {list_name}')
-         get_tasks_and_notify(list_id,list_name)
+def get_tickets_from_customer_lists(folder_id):
+    lists = get_list(folder_id)
+    for list_item in lists:
+        list_name, list_id = list_item.get('name'), list_item.get('id')
+        print(f'Fetching tickets for list: {list_name}')
+        get_tasks_and_notify(list_id,list_name)
 
 def send_summary_slack():
     global end_of_day_tickets, summary_sent_today
