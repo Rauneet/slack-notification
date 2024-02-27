@@ -61,11 +61,8 @@ def is_bug_based_on_comment(comments):
 #     updated_recently = (now - date_updated) < datetime.timedelta(hours=hours)
 #     created_recently = (now - date_created) < datetime.timedelta(hours=hours)
 
-<<<<<<< HEAD
     # return updated_recently or created_recently
 
-=======
->>>>>>> 10c5867263cfa6e6178ac89937dd9b33c31d8614
 def get_tasks_and_notify(list_id, list_name):
     global notified_tickets                                   #global notified_tickets dictionary for storing the ticket id which have been notified 
     if is_night_time():
@@ -82,11 +79,8 @@ def get_tasks_and_notify(list_id, list_name):
         task_url = ticket.get('url')     #this line will remain
         if task_id in notified_tickets: #or not is_recent_ticket(ticket):      #checks if the ticket is in notified_tickets dictionary if not present it will again continue 
             continue
-<<<<<<< HEAD
         # print(task_url)                            #for debugging
         
-=======
->>>>>>> 10c5867263cfa6e6178ac89937dd9b33c31d8614
         status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
         #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
         priority = ticket.get('priority')    #get to the priority object  and then access the attribute value
