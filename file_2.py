@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # import requests
 # import datetime
 # from pytz import timezone
