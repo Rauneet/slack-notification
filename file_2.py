@@ -15,6 +15,7 @@ notified_tickets = set()
 # Global list to keep track of tickets for end-of-day summary
 end_of_day_tickets = []   #new line
 summary_sent_today = False
+last_run_date = datetime.datetime.now(tz=timezone('Asia/Kolkata')).date()     #new line
 
 
 # Constants 
@@ -53,7 +54,7 @@ def is_bug_based_on_comment(comments):
     for comment in comments:                 #iterate through each commets
         if comment['user']['id'] == -1:      #checks if the id of the comment is -1
             bot_comment_count +=1            #if it is -1 increase the bot_comment_count
-    if bot_comment_count>=1:                 #checks if the comment is greater than equal to 2
+    if bot_comment_count >=1:                 #checks if the comment is greater than equal to 2
     #if true consider it as a bug based on comment  
         return True
     else:
@@ -83,16 +84,16 @@ def get_tasks_and_notify(list_id, list_name):
 
     tickets = response.json().get('tasks', [])
     for ticket in tickets:
-        task_id = ticket['id']                                                                         #till here 
-        task_url = ticket.get('url')     #this line will remain
-        if task_id in notified_tickets: #or not is_recent_ticket(ticket):      #checks if the ticket is in notified_tickets dictionary if not present it will again continue 
+        task_id = ticket['id']                                                                          
+        task_url = ticket.get('url')    
+        if task_id in notified_tickets: #checks if the ticket is in notified_tickets set if not present it will again continue 
             continue
         # print(task_url)                            #for debugging
         
         status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
         #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
-        priority = ticket.get('priority')    #get to the priority object  and then access the attribute value
-        # retrieves the ticket priority in lowercase for better consistency default to none if priority is not set 
+        priority = ticket.get('priority')    #get to the priority object
+        #retrieves the ticket priority in lowercase for better consistency default to none if priority is not set 
         priority_type = priority.get('priority', '').lower() if priority and isinstance(priority, dict) else 'none'
         
         # Check for desired status and priority
@@ -102,7 +103,7 @@ def get_tasks_and_notify(list_id, list_name):
         #Fetches comments for a given task from ClickUp   
             comment_response = requests.get(f'{CLICKUP_API_ENDPOINT}/task/{task_id}/comment', headers=HEADERS)
             if comment_response.status_code == 200:
-                # Extracts comments
+                #fetch comments
                 comments = comment_response.json().get('comments' ,[])
                 if is_bug_based_on_comment(comments):
                     #end_of_day_tickets.append(task_url)   #new line is added here      #identified as bug and added to the list 
@@ -171,41 +172,35 @@ def send_summary_slack():
         print(f'No bug tickets for the day')
 
 
+def check_for_new_date():                                                         #new function/new line
+    global summary_sent_today, notified_tickets, last_run_date
+    current_date = datetime.datetime.now(tz=timezone('Asia/Kolkata')).date()
+    if current_date > last_run_date:
+        notified_tickets.clear()
+        end_of_day_tickets.clear()
+        summary_sent_today = False
+        last_run_date = current_date
+        print('New date detected.. Resetting the notified_tickets and summary_sent_today')
+
 
 #function to calculate the seconds until next summary time 
 def get_seconds_until_summary():
 #gets the current time in Asia kolkata timezone
     current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
 #set the summary time for today at X pm/am      
-    summary_time = current_time.replace(hour=21, minute=0, second=0,microsecond=0)  # remove it immediately
+    summary_time = current_time.replace(hour=14, minute=50, second=0,microsecond=0)  # remove it immediately
 #if current time is passed summary time then sets sumamry time for the next day at same time  
-    if current_time > summary_time:
+    if current_time >= summary_time:
         summary_time = summary_time + datetime.timedelta(days=1)
 #return the number of seconds until the next summary time 
     return (summary_time - current_time).total_seconds()
 
 
-
-# def is_time_to_send_summary():
-#     current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
-#     start_time = current_time.replace(hour=21,minute=0,second=0,microsecond=0)
-#     return current_time >= start_time
-#     end_time = start_time + datetime.timedelta(minutes=5)   #this two line was included 
-#     return start_time <= current_time <=end_time
-
-# def calculate_sleep_duration():
-#     current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
-#     send_time = current_time.replace(hour=21,minute=0,second=0,microsecond=0)
-#     if current_time >= send_time:
-#         return 60
-#     time_to_send = (send_time - current_time).totalseconds()
-#     return min(time_to_send,300)
-
 if not is_night_time():
     # it will check for new tickets every 60 min
-    #global summary_sent_today
-    while True:                              #1
-        print('checking for new tickets to notify')  #2
+    while True:
+        check_for_new_date()     #new line
+        print('checking for new tickets to notify')  
         get_tickets_from_customer_lists("109448264")
     #calculates the seconds until the next summary time 
         next_summary_in_seconds = get_seconds_until_summary()
@@ -223,34 +218,16 @@ if not is_night_time():
         #after waking up from sleep it will agian check for the current time 
         current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
         #checks if current time is scheduled summary time and summary hasnt been sent for today
-        if current_time.hour == 21 and not summary_sent_today:           #time is 21 <=current_time.hour < 22
+        if current_time.hour == 14 and current_time.minute == 50 and not summary_sent_today:           #time is 21 <=current_time.hour < 22
         #sends the summary for today and mark it as true
             send_summary_slack()
             summary_sent_today = True
         #Again reset the current time and mark summary sent today as False and allow sending the summary for next day
             if current_time.hour==0:
                 summary_sent_today= False
-        elif current_time.hour!=21:
+        elif current_time.hour!=14 and current_time.minute!=50:
             summary_sent_today= False
 else:
     print('Night time no action needed')
 
-
-# if not is_night_time():
-#     # it will check for new tickets every 60 min
-#     while True:                          #1
-#         print('checking for new tickets to notify')  #2                    #uncomment this afterwards  
-#         get_tickets_from_customer_lists("109448264")
-#         # if is_time_to_send_summary() and not summary_sent_today:
-#         # if current_time.hour == 12 and current_time.minute == 00 and not summary_sent_today:           #time is 21 <=current_time.hour < 22
-#         send_summary_slack()
-#             # summary_sent_today = True
-#         # sleep_duration = calculate_sleep_duration()     #new line added 
-#         # print(f"Sleeping for {sleep_duration // 60} minutes.")
-#         # elif not is_time_to_send_summary():                                             #< 20 or current_time.hour >= 22:
-#         #     summary_sent_today = False    
-#         print(f"Waiting for {SECONDS_IN_AN_HOUR // 60} minutes until the next check.")  #3  
-#         time.sleep(SECONDS_IN_AN_HOUR)       #(SECONDS_IN_AN_HOUR)  #4   
-# else:
-#     print("It's night time. No operations will be performed.")
 
