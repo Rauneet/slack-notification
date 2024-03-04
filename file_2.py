@@ -257,37 +257,6 @@ else:
     
     
     
-#     #calculates the seconds until the next summary time 
-#         next_summary_in_seconds = get_seconds_until_summary()
-#     #next check will be after 60 mins
-#         next_check_time = datetime.datetime.now(tz=timezone('Asia/Kolkata')) + timedelta(minutes=15)
-#         while datetime.datetime.now(tz=timezone('Asia/Kolkata')) < next_check_time:
-#             time.sleep(60)
-#         current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
-#         if is_time_to_send_summary(current_time) and not summary_sent_today: 
-#         # next_check_in_seconds = 3600                                      #remove this immediately
-#     # Determine the sleep duration based on the next scheduled summary time, 
-#     # Sleep until it's time for the summary or for 1 hour, whichever is sooner    
-#         # if next_summary_in_seconds < next_check_in_seconds:                                # uncomment from here
-#         #     sleep_duration = next_summary_in_seconds
-#         # else:
-#         #     sleep_duration = next_check_in_seconds
-#         # print(f"Sleeping for {sleep_duration // 60} minutes.")
-#         # #sleeps for the calculated duration
-#         # time.sleep(sleep_duration)
-#         # #after waking up from sleep it will agian check for the current time 
-#         # current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
-#         # #checks if current time is scheduled summary time and summary hasnt been sent for today
-#         # if current_time.hour == 14 and current_time.minute == 50 and not summary_sent_today:    #till here        #time is 21 <=current_time.hour < 22
-#         # #sends the summary for today and mark it as true
-#             send_summary_slack()
-#             summary_sent_today = True
-#         #Again reset the current time and mark summary sent today as False and allow sending the summary for next day
-#         elif current_time.hour==0:
-#             summary_sent_today= False
-#         # elif current_time.hour!=14 and current_time.minute!=50:
-#         #     summary_sent_today= False
-# else:
-#     print('Night time no action needed')
+
 
 
