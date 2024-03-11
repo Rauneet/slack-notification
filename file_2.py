@@ -112,16 +112,29 @@ def get_tasks_and_notify(list_id, list_name):
                         if len(user_comments) > 2:
                             print(f"Task ID: {task_id} has more than two user comments, no action needed.")
                             continue
+                        if not user_comments:
+                            ticket_created_timestamp = int(ticket['date_created']) // 1000 
+                            ticket_created_timestamp = datetime.datetime.fromtimestamp(ticket_created_timestamp,tz=timezone('Asia/Kolkata'))
+                            #ticket_created_timestamp_formatted = datetime.datetime.fromtimestamp(ticket_created_timestamp).strftime('%Y-%m-%d %H:%M')
+                            if (current_time - ticket_created_timestamp).total_seconds() >7200:
+                                ticket_created_timestamp_formatted = ticket_created_timestamp.strftime('%Y-%m-%d %H:%M')
+                                message = f'Ticket has not recieved update since {ticket_created_timestamp_formatted} Update with latest progress.'
+                                if send_message_slack(message, task_url):
+                                    print(f'Message sent for ticket where no user comments are there', message)
+                                    notified_tickets.add(task_id)
+                                    end_of_day_tickets.append(task_url)
+                                else:
+                                    print(f'Failed to send notification')
                 #checks if there are less than equal to 2 user comments and check the time of the last comment 
-                        if len(user_comments)<=2:   #changed the condition to check the user comments <=2
+                        elif len(user_comments) <=2:   #changed the condition to check the user comments <=2   #used elif instead of if here 
                         # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
-                            last_comment_timestamp = int(user_comments[-1]['date']) // 1000  if user_comments else 0
+                            last_comment_timestamp = int(user_comments[-1]['date']) // 1000  #if user_comments else 0
                         #added this to get the last update time on the ticket 
                             last_update_time = datetime.datetime.fromtimestamp(last_comment_timestamp, tz=timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M')
                         #check for the current time 
                             current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
-                            if not user_comments or (current_time - last_comment_timestamp) > 7200:              #remove this not user_comments
+                            if (current_time - last_comment_timestamp) > 7200:              #remove this if not user_comments or (included)
                                 message = f'Ticket has not recieved update since {last_update_time}. Update with latest progress.'  #updated the message structure to include the last update time on ticket 
                         # task_url =  f'https://app.clickup.com/t/{task_id}'    
                                 if send_message_slack(message, task_url):                                              
