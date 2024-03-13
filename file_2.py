@@ -37,12 +37,13 @@ def is_night_time():
     return not 9 <= current_time.hour <= 21
 
 
-def send_message_slack(message, task_url):
-    full_message = f'{message}'                 #Ticket URL:is included in full message
+def send_message_slack(message, task_url): #task_name, list_name):
+    
+    full_message = f'{message}'                #Ticket URL:is included in full message
     payload = {
         'full_message' : full_message,
         'task_url': task_url
-    }
+            }
     headers = {
         "Content-Type": "application/json"
     }
@@ -85,8 +86,13 @@ def get_tasks_and_notify(list_id, list_name):
 
     tickets = response.json().get('tasks', [])
     for ticket in tickets:    #here is for ticket in tickets change it after checking 
-        task_id = ticket['id']                                                                          
-        task_url = ticket.get('url')    
+        task_id = ticket['id']
+        task_name = ticket.get('name')   #added ticket name here                                                                        
+        task_url = ticket.get('url')
+        assignees = ticket.get('assignee', [])
+        if assignees:
+            assignee_username = assignees[0].get('username', 'Unassigned')
+            print(f'Assignee for {task_id} is {assignee_username}')
         if task_id not in notified_tickets and is_ticket_eligible_for_review(ticket, current_time): #checks if the ticket is in notified_tickets set if not present it will again continue 
             status_type = ticket.get('status', {}).get('status', '').lower().replace(" ", "")
             #print(f"Debug - Ticket ID: {ticket['id']} Status: {status_type}") 
@@ -118,8 +124,8 @@ def get_tasks_and_notify(list_id, list_name):
                             #ticket_created_timestamp_formatted = datetime.datetime.fromtimestamp(ticket_created_timestamp).strftime('%Y-%m-%d %H:%M')
                             if (current_time - ticket_created_timestamp).total_seconds() >7200:
                                 ticket_created_timestamp_formatted = ticket_created_timestamp.strftime('%Y-%m-%d %H:%M')
-                                message = f'Ticket has not recieved update since {ticket_created_timestamp_formatted} Update with latest progress.'
-                                if send_message_slack(message, task_url):
+                                message = f'From Customer: "{list_name}" Ticket headline: "{task_name}" has not recieved update since {ticket_created_timestamp_formatted}. Update with latest progress.'
+                                if send_message_slack(message, task_url, task_name): #task_name, list_name):
                                     print(f'Message sent for ticket where no user comments are there', message)
                                     notified_tickets.add(task_id)
                                     end_of_day_tickets.append(task_url)
@@ -135,9 +141,9 @@ def get_tasks_and_notify(list_id, list_name):
                             current_time = time.time()
                     # Checks if the last comment was made more than 2 hours ago.
                             if (current_time - last_comment_timestamp) > 7200:              #remove this if not user_comments or (included)
-                                message = f'Ticket has not recieved update since {last_update_time}. Update with latest progress.'  #updated the message structure to include the last update time on ticket 
+                                message = f'From Customer: "{list_name}" Ticket headline: "{task_name}" has not recieved update since {last_update_time}. Update with latest progress.'  #updated the message structure to include the last update time on ticket 
                         # task_url =  f'https://app.clickup.com/t/{task_id}'    
-                                if send_message_slack(message, task_url):                                              
+                                if send_message_slack(message, task_url): #task_name, list_name):                                              
                                     print(f'Message being sent' , message)
                                     end_of_day_tickets.append(task_url)
                                     notified_tickets.add(task_id)                                  #[task_id] = True                        #this will mark the ticket as notified true                                                                    
@@ -174,7 +180,7 @@ def send_summary_slack():
     global end_of_day_tickets, summary_sent_today
     if end_of_day_tickets:
         message = "End of Day Summary: Bug Tickets\n"
-        message +="\n".join([f"- {task_url}" for task_url in end_of_day_tickets])
+        message +="\n".join([f"-{task_url}" for task_url in end_of_day_tickets])
         if send_message_slack(message, None):
             print(f"Summary sent to slack")
             # summary_sent_today = True
@@ -198,7 +204,7 @@ def check_for_new_date():                                                       
 #function to send the summary to slack at particular time and also gives a 10 min buffer time to send summary
 def is_time_to_send_summary(current_time):
     current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
-    summary_start_time = current_time.replace(hour=20,minute=30,second=0, microsecond=0)   #summary time set at 8:30pm
+    summary_start_time = current_time.replace(hour=18,minute=0,second=0, microsecond=0)   #summary time set at 8:30pm
     summary_end_time = summary_start_time + datetime.timedelta(minutes=10)                 #given 10 minutes buffer time to send summary
     return summary_start_time <= current_time <= summary_end_time    #new line 
 
@@ -207,7 +213,7 @@ def is_time_to_send_summary(current_time):
 def calculate_sleep_duration():
     current_time = datetime.datetime.now(tz=timezone('Asia/Kolkata'))
     next_check_time = (current_time + datetime.timedelta(minutes=15)).replace(second=0, microsecond=0)
-    next_summary_time = current_time.replace(hour=20, minute=30, second=0, microsecond=0)
+    next_summary_time = current_time.replace(hour=18, minute=0, second=0, microsecond=0)
     if current_time >= next_summary_time:
         next_summary_time = next_summary_time + datetime.timedelta(days=1)
     sleep_duration = min((next_check_time - current_time).total_seconds(), (next_summary_time - current_time).total_seconds())
