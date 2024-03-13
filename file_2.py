@@ -38,12 +38,11 @@ def is_night_time():
 
 
 def send_message_slack(message, task_url): #task_name, list_name):
-    
     full_message = f'{message}'                #Ticket URL:is included in full message
     payload = {
-        'full_message' : full_message,
-        'task_url': task_url
-            }
+         'full_message' : full_message,
+         'task_url': task_url
+        }
     headers = {
         "Content-Type": "application/json"
     }
@@ -115,8 +114,8 @@ def get_tasks_and_notify(list_id, list_name):
                         user_comments = [comment for comment in comments if comment['user']['id'] != -1]
                         pprint.pprint(user_comments)
                 # Checks if there are more than two comments on the task.
-                        if len(user_comments) > 2:
-                            print(f"Task ID: {task_id} has more than two user comments, no action needed.")
+                        if len(user_comments) >=1:
+                            print(f"Task ID: {task_id} has more than one user comments, no action needed.")
                             continue
                         if not user_comments:
                             ticket_created_timestamp = int(ticket['date_created']) // 1000 
@@ -125,14 +124,16 @@ def get_tasks_and_notify(list_id, list_name):
                             if (current_time - ticket_created_timestamp).total_seconds() >7200:
                                 ticket_created_timestamp_formatted = ticket_created_timestamp.strftime('%Y-%m-%d %H:%M')
                                 message = f'From Customer: "{list_name}" Ticket headline: "{task_name}" has not recieved update since {ticket_created_timestamp_formatted}. Update with latest progress.'
-                                if send_message_slack(message, task_url, task_name): #task_name, list_name):
+                                if send_message_slack(message, task_url): #task_name, list_name):
                                     print(f'Message sent for ticket where no user comments are there', message)
                                     notified_tickets.add(task_id)
                                     end_of_day_tickets.append(task_url)
                                 else:
                                     print(f'Failed to send notification')
+                            else:
+                                print(f'Time is not more than 2 hours')
                 #checks if there are less than equal to 2 user comments and check the time of the last comment 
-                        elif len(user_comments) <=2:   #changed the condition to check the user comments <=2   #used elif instead of if here 
+                        elif user_comments:   #changed the condition to check the user comments <=2   #used elif instead of if here len(user_coomment)<=2
                         # Converts the timestamp of the last comment from milliseconds to seconds for comparison.
                             last_comment_timestamp = int(user_comments[-1]['date']) // 1000  #if user_comments else 0
                         #added this to get the last update time on the ticket 
@@ -153,6 +154,7 @@ def get_tasks_and_notify(list_id, list_name):
                                 print(f'No need to notify as last comment was made within 2 hours')   # Last comment was within 2 hours, no notification needed.
                         else:
                             print(f'No comments in the ticket is made by user')   # No comments have been made on the task.
+                            print()
                     else:
                         print(f'its not a bug based on comment {task_url}') #commented out this but we have to un comment thhis 
                 else:
