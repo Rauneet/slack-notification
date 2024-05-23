@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pyhton-script
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: python-script
+  template:
+    metadata:
+      labels:
+        name: python-script
+    spec:
+      containers:
+      - name: python-script-container
+        image: rauneetverma/python:latest
+        ports:
+        - containerPort: 5000
