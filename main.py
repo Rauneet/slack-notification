@@ -7,7 +7,7 @@ import json
 from datetime import timedelta
 from dotenv import load_dotenv
 from pytz import timezone
-from emoji import emojize
+
 
 load_dotenv()
 
@@ -145,7 +145,7 @@ def check_and_send_notification(ticket, task_name, task_url, list_name, task_id,
         ticket_created_timestamp = datetime.datetime.fromtimestamp(ticket_created_timestamp,tz=TIMEZONE)
         if (current_time - ticket_created_timestamp).total_seconds() > 7200:
             ticket_created_timestamp_formatted = ticket_created_timestamp.strftime('%Y-%m-%d %H:%M')
-            message = (f'From Customer: "{list_name}" Ticket headline: "{task_name}" has not recieved update since {ticket_created_timestamp_formatted}. Update with latest progress.{emojize(':warning:',use_aliases=True)}')
+            message = (f'From Customer: "{list_name}" Ticket headline: "{task_name}" has not recieved update since {ticket_created_timestamp_formatted}. Update with latest progress.')
             if send_message_slack(message, task_url):
                 print(f'Message sent to slack : {message}')
                 notified_tickets.add(task_id)
