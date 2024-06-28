@@ -293,7 +293,7 @@ def main_loop():
     while not is_night_time():
         check_for_new_date()
         print('checking for new tickets to notify') 
-        get_tickets_from_customer_lists("109448264")
+        get_tickets_from_customer_lists("109448264")   # folder id
         sleep_duration = calculate_sleep_duration()
         print(f'sleeping for {sleep_duration // 60} minutes')
         time.sleep(sleep_duration)
